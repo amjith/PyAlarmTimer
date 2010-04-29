@@ -1,4 +1,3 @@
-
 import sys
 from PyQt4 import QtCore, QtGui
 from itertools import cycle
@@ -13,74 +12,61 @@ class AlarmTimer(QtGui.QMainWindow):
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
+        # Initialize member variables
+        self.color_names = [ "Normal", "Yellow" ]
+        self.color_idx = 1
+        self.updateTimers(timer_values)
+        self.cur_timer = self.timer_iter.next()      # Current timer value
+        self.snooze_time = 1 * 60
+        self.show()
+        self.oneSecondCounter = 0
+        #self.showTimer()
+
+        # Start a timer for 1s(=1000ms) and call showTimer() every second
         timer = QtCore.QTimer(self)
         timer.timeout.connect(self.showTimer)
-        timer.start(500)
+        timer.start(250)
         
-        self.color_names = [ "Normal", "Black" ]
-        self.color_idx = 1
-        self.alarm_times = timer_values
-        self.timer_iter = cycle(self.alarm_times)
-        self.sleep_time = self.timer_iter.next()
-        self.timer_expired = False
-        self.snooze_time = 5
-        self.showTimer()
 
     def showTimer(self):
-        text = "%d:%02d" % (0,self.sleep_time)
+        text = "%d:%02d" % (self.cur_timer/60,self.cur_timer % 60)
         self.ui.lcdNumber.display(text)
-        if (self.sleep_time == 0):
+        if (self.cur_timer == 0):
             self.color_idx = 3 - self.color_idx
             self.show()
-            self.Visible = True
             self.setStyleSheet("QWidget { background-color: %s }" % self.color_names[self.color_idx - 1])
-            self.timer_expired = True
+        elif self.oneSecondCounter == 3:
+            self.cur_timer -= 1
+            self.oneSecondCounter = 0
         else:
-            self.sleep_time -= 1
+            self.oneSecondCounter += 1
+
+    def updateTimers(self, timer_list):
+        self.alarm_times = timer_list
+        self.timer_iter = cycle(self.alarm_times)    # An iterator that cycles through the list
 
     def mouseReleaseEvent(self, event):
         button = event.button()
         if button == 2:
             self.hide()
-            self.Visible = False
+            if (self.cur_timer == 0):
+                self.cur_timer = self.snooze_time        # Start the timer with snooze value if teh cur_timer has expired
         elif button == 1: # left click
-            if (self.timer_expired): # blinking timer should be closed on a left click
-                self.sleep_time = self.timer_iter.next()
-                self.timer_expired = False
+            if (self.cur_timer == 0): # blinking timer should be closed on a left click
+                self.cur_timer = self.timer_iter.next()
                 self.setStyleSheet("QWidget { background-color: Normal }" )
 
     def mousePressEvent(self, event):
         button = event.button()
         if button == 1:
             self.dragPosition = event.globalPos() - self.frameGeometry().topLeft();
-        elif button == 2:
-            print "Right Click"
 
     def mouseMoveEvent(self, event):
-        button = event.button()
         if event.buttons() != QtCore.Qt.LeftButton: # not left click
             return 
         
         self.move(event.globalPos() - self.dragPosition)
 
-#    def runAlarm( time_list ):
-#        minute = 5     # one minute = 5 seconds
-#
-#        while (1):
-#            for t in time_list:
-#                cur_time = t 
-#                print cur_time
-#                while ( cur_time > 0 ):
-#                    time.sleep(minute)
-#                    cur_time -= 1
-#                    print cur_time
-#                   
-#                print "Alarm:",t
-#                sys.stdout.flush();
-#                doit = raw_input("Continue (Y/N)?[Y]: ")
-#                if doit == 'N' or doit=='n':
-#                    print "Exiting....."
-#                    return
 
 def Str2Num(str_list):
     num = []

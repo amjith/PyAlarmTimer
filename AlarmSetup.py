@@ -6,7 +6,6 @@ from PyQt4 import QtCore, QtGui
 from Resources.AlarmSetupDialog_ui import Ui_DialogAlarmSetup
 from AlarmTimer import AlarmTimer
 
-
 class AlarmSetup(QtGui.QMainWindow):
 
     def __init__(self, parent=None):
@@ -18,30 +17,39 @@ class AlarmSetup(QtGui.QMainWindow):
         self.ui.lineEditAlarm1.setValidator(intValidator);
         self.ui.lineEditAlarm2.setValidator(intValidator);
 
+        # System Tray
         self.createActions()
         self.createTrayIcon()
         self.trayIcon.setIcon(QtGui.QIcon('Resources/bell.png'))
         self.trayIcon.show()
+        self.trayMsgDisplayed = False
+    
+        # Lcd Timer display
+        self.initializeTimers = True
 
     def closeEvent(self, event):
-        if self.trayIcon.isVisible():
+        if self.trayIcon.isVisible() and self.trayMsgDisplayed == False:
             QtGui.QMessageBox.information(self, "Systray",
                     "The program will keep running in the system tray. To "
                     "terminate the program, choose <b>Quit</b> in the "
                     "context menu of the system tray entry.")
             self.hide()
             event.ignore()
+            self.trayMsgDisplayed = True
 
     def reject(self):
         self.close();
-        print "reject()"
 
     def accept(self):
-        print "Alarm1:",self.ui.lineEditAlarm1.text(),"Alarm2:",self.ui.lineEditAlarm2.text()
+        #print "Alarm1:",self.ui.lineEditAlarm1.text(),"Alarm2:",self.ui.lineEditAlarm2.text(), "Recurring:", self.ui.checkBoxRecurring.value()
+        timer_list = [int(self.ui.lineEditAlarm1.text()) * 60, int(self.ui.lineEditAlarm2.text()) * 60 ]
+        if self.initializeTimers:
+            self.timerLCD = AlarmTimer(timer_list) # Create a new timer with zero minutes
+            self.initializeTimers = False
+        else:
+            self.timerLCD.updateTimers(timer_list) # Convert minutes to seconds
         self.close();
-        self.timerLCD = AlarmTimer([int(self.ui.lineEditAlarm1.text()), int(self.ui.lineEditAlarm2.text())])
-        self.timerLCD.show()
-        self.timerLCD.Visible = True
+#        self.timerLCD.show()
 
     def createActions(self):
         self.toggleTimerAction = QtGui.QAction("&Toggle Timer", self,
@@ -54,12 +62,12 @@ class AlarmSetup(QtGui.QMainWindow):
                 triggered=QtGui.qApp.quit)
 
     def toggleTimer(self):
-        if self.timerLCD.Visible:
+        if self.timerLCD == None:
+            return
+        if self.timerLCD.isVisible():
             self.timerLCD.hide()
-            self.timerLCD.Visible = False
         else:
             self.timerLCD.show()
-            self.timerLCD.Visible = True
 
 
     def createTrayIcon(self):
