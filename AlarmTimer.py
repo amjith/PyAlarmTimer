@@ -20,15 +20,18 @@ class AlarmTimer(QtGui.QMainWindow):
         self.snooze_time = 1 * 60
         self.show()
         self.oneSecondCounter = 0
-        #self.showTimer()
+        self.timerPause = False
 
-        # Start a timer for 1s(=1000ms) and call showTimer() every second
+
+        # Start a timer for 250ms and call showTimer()
         timer = QtCore.QTimer(self)
         timer.timeout.connect(self.showTimer)
         timer.start(250)
         
 
     def showTimer(self):
+        if self.timerPause:
+            return
         text = "%d:%02d" % (self.cur_timer/60,self.cur_timer % 60)
         self.ui.lcdNumber.display(text)
         if (self.cur_timer == 0):
@@ -44,6 +47,13 @@ class AlarmTimer(QtGui.QMainWindow):
     def updateTimers(self, timer_list):
         self.alarm_times = timer_list
         self.timer_iter = cycle(self.alarm_times)    # An iterator that cycles through the list
+
+    def pauseTimer(self):
+        self.timerPause = not self.timerPause
+
+    def resetTimer(self):    # Reset the timer back to the head of the list
+        self.timer_iter = cycle(self.alarm_times)    
+        self.cur_timer = self.timer_iter.next()     
 
     def mouseReleaseEvent(self, event):
         button = event.button()

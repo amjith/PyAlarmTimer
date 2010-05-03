@@ -20,10 +20,12 @@ class AlarmSetup(QtGui.QMainWindow):
         # System Tray
         self.createActions()
         self.createTrayIcon()
-        self.trayIcon.setIcon(QtGui.QIcon('Resources/bell.png'))
+        self.trayIcon.setIcon(QtGui.QIcon(':Icons/bell.png'))
         self.trayIcon.show()
         self.trayMsgDisplayed = False
     
+        self.trayIcon.activated.connect(self.iconActivated)
+
         # Lcd Timer display
         self.initializeTimers = True
 
@@ -49,11 +51,16 @@ class AlarmSetup(QtGui.QMainWindow):
         else:
             self.timerLCD.updateTimers(timer_list) # Convert minutes to seconds
         self.close();
-#        self.timerLCD.show()
 
     def createActions(self):
         self.toggleTimerAction = QtGui.QAction("&Toggle Timer", self,
                 triggered=self.toggleTimer)
+
+        self.pauseTimerAction = QtGui.QAction("&Pause/Play Timer", self,
+                triggered=self.pauseTimer)
+        
+        self.resetTimerAction = QtGui.QAction("&Reset Timer", self,
+                triggered=self.resetTimer)
 
         self.settingsAction = QtGui.QAction("&Settings", self,
                 triggered=self.showNormal)
@@ -61,18 +68,33 @@ class AlarmSetup(QtGui.QMainWindow):
         self.quitAction = QtGui.QAction("&Quit", self,
                 triggered=QtGui.qApp.quit)
 
-    def toggleTimer(self):
-        if self.timerLCD == None:
-            return
-        if self.timerLCD.isVisible():
-            self.timerLCD.hide()
-        else:
-            self.timerLCD.show()
 
+    def iconActivated(self, reason):
+        if reason in (QtGui.QSystemTrayIcon.Trigger, QtGui.QSystemTrayIcon.DoubleClick):
+            self.toggleTimer()
+
+    def pauseTimer(self):
+        self.timerLCD.pauseTimer()
+
+    def resetTimer(self):
+        self.timerLCD.resetTimer()
+        
+
+    def toggleTimer(self):
+        try:
+            if self.timerLCD.isVisible():
+                self.timerLCD.hide()
+            else:
+                self.timerLCD.show()
+        except AttributeError:
+            return
 
     def createTrayIcon(self):
          self.trayIconMenu = QtGui.QMenu(self)
          self.trayIconMenu.addAction(self.toggleTimerAction)
+         self.trayIconMenu.addAction(self.pauseTimerAction)
+         self.trayIconMenu.addAction(self.resetTimerAction)
+         self.trayIconMenu.addSeparator()
          self.trayIconMenu.addAction(self.settingsAction)
          self.trayIconMenu.addSeparator()
          self.trayIconMenu.addAction(self.quitAction)
